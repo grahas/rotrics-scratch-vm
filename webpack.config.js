@@ -1,26 +1,31 @@
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const defaultsDeep = require('lodash.defaultsdeep');
 const path = require('path');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 
 const base = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     devServer: {
-        contentBase: false,
+        static: false,
         host: '0.0.0.0',
         port: process.env.PORT || 8073
     },
     devtool: 'cheap-module-source-map',
     output: {
-        library: 'VirtualMachine',
         filename: '[name].js'
+    },
+    resolve: {
+        fallback: {
+            stream: require.resolve('stream-browserify'),
+            buffer: require.resolve('buffer/')
+        }
     },
     module: {
         rules: [{
             test: /\.js$/,
             loader: 'babel-loader',
             include: path.resolve(__dirname, 'src'),
-            query: {
+            options: {
                 presets: [['@babel/preset-env', {targets: {browsers: ['last 3 versions', 'Safari >= 8', 'iOS >= 8']}}]]
             }
         },
@@ -31,7 +36,7 @@ const base = {
     },
     optimization: {
         minimizer: [
-            new UglifyJsPlugin({
+            new TerserPlugin({
                 include: /\.min\.js$/
             })
         ]
@@ -42,12 +47,14 @@ const base = {
 module.exports = [
     // Web-compatible
     defaultsDeep({}, base, {
+        name: 'web',
         target: 'web',
         entry: {
             'scratch-vm': './src/index.js',
             'scratch-vm.min': './src/index.js'
         },
         output: {
+            library: 'VirtualMachine',
             libraryTarget: 'umd',
             path: path.resolve('dist', 'web')
         },
@@ -55,13 +62,17 @@ module.exports = [
             rules: base.module.rules.concat([
                 {
                     test: require.resolve('./src/index.js'),
-                    loader: 'expose-loader?VirtualMachine'
+                    loader: 'expose-loader',
+                    options: {
+                        exposes: 'VirtualMachine'
+                    }
                 }
             ])
         }
     }),
     // Node-compatible
     defaultsDeep({}, base, {
+        name: 'node',
         target: 'node',
         entry: {
             'scratch-vm': './src/index.js'
@@ -85,6 +96,7 @@ module.exports = [
     }),
     // Playground
     defaultsDeep({}, base, {
+        name: 'playground',
         target: 'web',
         entry: {
             'benchmark': './src/playground/benchmark',
@@ -98,11 +110,17 @@ module.exports = [
             rules: base.module.rules.concat([
                 {
                     test: require.resolve('./src/index.js'),
-                    loader: 'expose-loader?VirtualMachine'
+                    loader: 'expose-loader',
+                    options: {
+                        exposes: 'VirtualMachine'
+                    }
                 },
                 {
                     test: require.resolve('./src/extensions/scratch3_video_sensing/debug.js'),
-                    loader: 'expose-loader?Scratch3VideoSensingDebug'
+                    loader: 'expose-loader',
+                    options: {
+                        exposes: 'Scratch3VideoSensingDebug'
+                    }
                 },
                 {
                     test: require.resolve('stats.js/build/stats.min.js'),
@@ -110,19 +128,31 @@ module.exports = [
                 },
                 {
                     test: require.resolve('scratch-blocks/dist/vertical.js'),
-                    loader: 'expose-loader?Blockly'
+                    loader: 'expose-loader',
+                    options: {
+                        exposes: 'Blockly'
+                    }
                 },
                 {
                     test: require.resolve('scratch-audio/src/index.js'),
-                    loader: 'expose-loader?AudioEngine'
+                    loader: 'expose-loader',
+                    options: {
+                        exposes: 'AudioEngine'
+                    }
                 },
                 {
                     test: require.resolve('scratch-storage/src/index.js'),
-                    loader: 'expose-loader?ScratchStorage'
+                    loader: 'expose-loader',
+                    options: {
+                        exposes: 'ScratchStorage'
+                    }
                 },
                 {
                     test: require.resolve('scratch-render/src/index.js'),
-                    loader: 'expose-loader?ScratchRender'
+                    loader: 'expose-loader',
+                    options: {
+                        exposes: 'ScratchRender'
+                    }
                 }
             ])
         },
@@ -130,18 +160,20 @@ module.exports = [
             hints: false
         },
         plugins: base.plugins.concat([
-            new CopyWebpackPlugin([{
-                from: 'node_modules/scratch-blocks/media',
-                to: 'media'
-            }, {
-                from: 'node_modules/scratch-storage/dist/web'
-            }, {
-                from: 'node_modules/scratch-render/dist/web'
-            }, {
-                from: 'node_modules/scratch-svg-renderer/dist/web'
-            }, {
-                from: 'src/playground'
-            }])
+            new CopyWebpackPlugin({
+                patterns: [{
+                    from: 'node_modules/scratch-blocks/media',
+                    to: 'media'
+                }, {
+                    from: 'node_modules/scratch-storage/dist/web'
+                }, {
+                    from: 'node_modules/scratch-render/dist/web'
+                }, {
+                    from: 'node_modules/scratch-svg-renderer/dist/web'
+                }, {
+                    from: 'src/playground'
+                }]
+            })
         ])
     })
 ];
