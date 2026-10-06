@@ -4,9 +4,10 @@ const callsite = require('callsite');
 const path = require('path');
 
 const oldRequire = Module.prototype.require;
-Module.prototype.require = function (target) {
+Module.prototype.require = function (...args) {
+    let [target] = args;
     if (target.indexOf('/') === -1) {
-        return oldRequire.apply(this, arguments);
+        return oldRequire.apply(this, args);
     }
 
     const stack = callsite();

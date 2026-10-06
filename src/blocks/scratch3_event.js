@@ -81,24 +81,13 @@ class Scratch3EventBlocks {
     }
 
     broadcast (args, util) {
-        console.log(`执行广播 ${args.BROADCAST_OPTION.name}`);
-        console.log(args);
-        console.log(util);
-
         const runtime = Object.keys(util.runtime).length === 1 ?
             util.runtime.runtime :
             util.runtime;
-        // console.log(runtimeKeys);
 
         const broadcastVar = runtime.getTargetForStage().lookupBroadcastMsg(
             args.BROADCAST_OPTION.id, args.BROADCAST_OPTION.name);
 
-        console.log('广播结果');
-        console.log(broadcastVar);
-        console.log('startHats');
-        console.log(util);
-        console.log(util.startHats);
-        
         if (broadcastVar) {
             const broadcastOption = broadcastVar.name;
             util.startHats('event_whenbroadcastreceived', {

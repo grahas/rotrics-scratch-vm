@@ -345,8 +345,11 @@ class Runtime extends EventEmitter {
         const a = this._primitives.event_broadcast_serial_port_receive(this.sequencer);
         console.log(a);
         this._primitives.event_broadcast_serial_port_receive = a;
-        window.broadcast_serial_port_receive = this._primitives.event_broadcast_serial_port_receive;
-        console.log(window.broadcast_serial_port_receive);
+        // Guarded: `window` is undefined outside a browser context (e.g. Node/test runs).
+        if (typeof window !== 'undefined') {
+            window.broadcast_serial_port_receive = this._primitives.event_broadcast_serial_port_receive;
+            console.log(window.broadcast_serial_port_receive);
+        }
 
         // Register and initialize "IO devices", containers for processing
         // I/O related data.
@@ -2148,9 +2151,9 @@ class Runtime extends EventEmitter {
      */
     _updateGlows (optExtraThreads) {
         const searchThreads = [];
-        searchThreads.push.apply(searchThreads, this.threads);
+        searchThreads.push(...this.threads);
         if (optExtraThreads) {
-            searchThreads.push.apply(searchThreads, optExtraThreads);
+            searchThreads.push(...optExtraThreads);
         }
         // Set of scripts that request a glow this frame.
         const requestedGlowsThisFrame = [];
